@@ -1,0 +1,24 @@
+body {
+	margin: 0;
+	background-color: rgba(55, 55, 55, 50);
+}
+
+.lightcork {
+	background-color: #D2A679;
+	background-image: radial-gradient(#e0c095 1px, transparent 1px),
+		radial-gradient(#d7b38c 1px, transparent 1px),
+		radial-gradient(#c89c70 2px, transparent 1px);
+	background-size: 12px 12px, 20px 20px, 40px 40px;
+	background-position: 0 0, 6px 6px, 12px 12px;
+	color: #333;
+}
+
+.darkcork {
+	background-color: #4B3A2D;
+	background-image: radial-gradient(#5f4d3e 1px, transparent 1px),
+		radial-gradient(#4f3e32 1px, transparent 1px),
+		radial-gradient(#6e5a4a 2px, transparent 1px);
+	background-size: 12px 12px, 20px 20px, 40px 40px;
+	background-position: 0 0, 6px 6px, 12px 12px;
+	color: #EEE;
+}

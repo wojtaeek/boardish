@@ -1,0 +1,86 @@
+/* required file for gridstack to work */
+@import "gridstack.scss";
+
+/* Optional styles for demos */
+.btn-primary {
+	color: #fff;
+	background-color: #007bff;
+}
+
+.btn {
+	display: inline-block;
+	padding: .375rem .75rem;
+	line-height: 1.5;
+	border-radius: .25rem;
+}
+
+a {
+	text-decoration: none;
+}
+
+h1 {
+	font-size: 2.5rem;
+	margin-bottom: 0;
+}
+
+.sidebar {
+	background: rgb(215, 243, 215);
+	padding: 25px 0;
+	height: 100px;
+	text-align: center;
+}
+
+.sidebar>.grid-stack-item,
+.sidebar-item {
+	width: 100px;
+	height: 50px;
+	border: 2px dashed green;
+	text-align: center;
+	line-height: 35px;
+	background: rgb(192, 231, 192);
+	cursor: default;
+	display: inline-block;
+}
+
+.grid-stack {
+	background-color: #4B3A2D;
+	background-image: radial-gradient(#5f4d3e 1px, transparent 1px),
+		radial-gradient(#4f3e32 1px, transparent 1px),
+		radial-gradient(#6e5a4a 2px, transparent 1px);
+	background-size: 12px 12px, 20px 20px, 40px 40px;
+	background-position: 0 0, 6px 6px, 12px 12px;
+	color: #EEE;
+	width: 100vw;
+}
+
+.sidebar>.grid-stack-item,
+.grid-stack-item-content {
+	text-align: center;
+	background-color: #D2A679;
+	background-image: radial-gradient(#e0c095 1px, transparent 1px),
+		radial-gradient(#d7b38c 1px, transparent 1px),
+		radial-gradient(#c89c70 2px, transparent 1px);
+	background-size: 12px 12px, 20px 20px, 40px 40px;
+	background-position: 0 0, 6px 6px, 12px 12px;
+	color: #333;
+	border: 3px dotted beige;
+}
+
+.grid-stack-item-removing {
+	opacity: 0.5;
+}
+
+/* make nested grid have slightly darker bg take almost all space (need some to tell them apart) so items inside can have similar to external size+margin */
+.grid-stack>.grid-stack-item.grid-stack-sub-grid>.grid-stack-item-content {
+	background: rgba(0, 0, 0, 0.1);
+	inset: 0 2px;
+}
+
+.grid-stack.grid-stack-nested {
+	background: none;
+	/* background-color: red; */
+	/* take entire space */
+	position: absolute;
+	inset: 0;
+	/* TODO change top: if you have content in nested grid */
+}
