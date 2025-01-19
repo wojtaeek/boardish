@@ -26,9 +26,7 @@ class UserBoard(models.Model):
 
 class Element(models.Model):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="elements")
-    order = (
-        models.PositiveIntegerField()
-    )  # Defines the order of the element in the board
+    order = models.PositiveIntegerField()
     x = models.IntegerField()
     y = models.IntegerField()
     w = models.IntegerField(default=1)
@@ -44,7 +42,7 @@ class Element(models.Model):
     ]
     type = models.CharField(max_length=50, choices=ELEMENT_TYPES, default="custom")
 
-    data = models.JSONField(null=True, blank=True)  # Store structured data as JSON
+    data = models.JSONField(null=True, blank=True)
     content = models.TextField(null=True, blank=True)
 
     def __str__(self):

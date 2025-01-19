@@ -6,20 +6,31 @@
         <ul class="navbar-nav ml-auto">
             {% if user.is_authenticated %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'board_list' %}">Boards</a>
+                <a class="nav-link" href="{% url 'board-list' %}">my boards</a>
             </li>
+
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-            </li>
+                <a href="#" class="nav-link" id="logout-link">logout</a>
+            </li> <!-- changed in django 5.0 logout requests must be a post not a get-->
             {% else %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">Login</a>
+                <a class="nav-link" href="{% url 'login' %}">login</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'register' %}">Register</a>
+                <a class="nav-link" href="{% url 'register' %}">register</a>
             </li>
             {% endif %}
 
         </ul>
     </div>
+    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+        {% csrf_token %}
+    </form>
+
+    <script>
+        document.getElementById('logout-link').addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('logout-form').submit();
+        });
+    </script>
 </nav>

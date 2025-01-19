@@ -1,8 +1,7 @@
-from django.urls import path, re_path
+from django.urls import path
 from django.contrib import admin
 from boards import views
 from django.contrib.auth.views import LogoutView
-from django.shortcuts import redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -13,10 +12,17 @@ urlpatterns = [
     path("board/", views.board_list, name="board_list"),
     path("board/<int:board_id>/", views.board_view, name="board_view"),
     # re_path(r"^$", lambda request: redirect("/index/", permanent=True)),
+    path("boards/", views.BoardList.as_view(), name="board-list"),
 ]
 
 htmx_patterns = [
     path("update-grid/", views.update_grid, name="update_grid"),
+    path("add-board/", views.add_board, name="add-board"),
+    path("sort/", views.sort, name="sort"),
+    path("board-list-partial", views.board_list, name="board-list-partial"),
+    path("detail/<int:pk>/", views.detail, name="detail"),
+    path("delete-board/<int:pk>/", views.delete_board, name="delete-board"),
+    path("search-board/", views.search_board, name="search-board"),
 ]
 
 urlpatterns += htmx_patterns

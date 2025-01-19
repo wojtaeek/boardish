@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "widget_tweaks",
     "django_extensions",
     "debug_toolbar",
+    "django_htmx",
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 ROOT_URLCONF = "boardish.urls"
@@ -134,12 +136,12 @@ MEDIA_ROOT = BASE_DIR / "media"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+AUTH_USER_MODEL = "boards.User"
 
 LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
-AUTH_USER_MODEL = "boards.User"
-
+PAGINATE_BY = 25
 """
 LOGGING = {
     "version": 1,

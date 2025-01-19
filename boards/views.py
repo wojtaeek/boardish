@@ -10,6 +10,53 @@ from django.contrib.auth import get_user_model
 from boards.models import Board, Element, UserBoard
 from boards.forms import RegisterForm
 from django.contrib.auth.decorators import login_required
+from boards.utils import get_max_order, reorder
+from django.views.generic import ListView
+from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.views import LogoutView
+
+
+class IndexView(TemplateView):
+    template_name = "index.html"
+
+
+class Login(LoginView):
+    template_name = "registration/login.html"
+
+
+class CustomLogoutView(LogoutView):
+    def get(self, request, *args, **kwargs):
+        return self.post(request, *args, **kwargs)
+
+
+class RegisterView(FormView):
+    form_class = RegisterForm
+    template_name = "registration/register.html"
+    success_url = reverse_lazy("login")
+
+    def form_valid(self, form):
+        form.save()  # save the user
+        return super().form_valid(form)
+
+
+class BoardList(LoginRequiredMixin, ListView):
+    template_name = "boards.html"
+    model = UserBoard
+    paginate_by = settings.PAGINATE_BY
+    context_object_name = "boards"
+
+    def get_template_names(self):
+        if self.request.htmx:
+            return "partials/film-list-elements.html"
+        return "boards.html"
+
+    def get_queryset(self):
+        return UserBoard.objects.prefetch_related("board").filter(
+            user=self.request.user
+        )
 
 
 def index(request):
@@ -23,24 +70,6 @@ def update_grid(request):
     data = json.loads(request.body)
     print("Received data:", data)  # This logs to the console
     return JsonResponse({"status": "success", "received_data": data})
-
-
-class IndexView(TemplateView):
-    template_name = "index.html"
-
-
-class Login(LoginView):
-    template_name = "registration/login.html"
-
-
-class RegisterView(FormView):
-    form_class = RegisterForm
-    template_name = "registration/register.html"
-    success_url = reverse_lazy("login")
-
-    def form_valid(self, form):
-        form.save()  # save the user
-        return super().form_valid(form)
 
 
 def board_view(request, board_id):
@@ -72,5 +101,86 @@ def board_view(request, board_id):
 
 @login_required
 def board_list(request):
-    boards = Board.objects.filter(user=request.user).order_by("id")
-    return render(request, "board_list.html", {"boards": boards})
+    boards = UserBoard.objects.filter(user=request.user).order_by("order")
+    return render(request, "partials/board-list.html", {"boards": boards})
+
+
+@login_required
+def add_board(request):
+    title = request.POST.get("boardtitle")
+
+    board = Board.objects.get_or_create(title=title)[0]
+
+    if not UserBoard.objects.filter(board=board, user=request.user).exists():
+        UserBoard.objects.create(
+            board=board, user=request.user, order=get_max_order(request.user)
+        )
+
+    boards = Board.objects.filter(user=request.user)
+
+    return render(request, "partials/board-list.html", {"boards": boards})
+
+
+def sort(request):
+    board_pks_order = request.POST.getlist("board_order")
+    boards = []
+    updated_boards = []
+
+    # fetch user's films in advance (rather than once per loop)
+    userboards = UserBoard.objects.prefetch_related("board").filter(user=request.user)
+
+    for idx, board_pk in enumerate(board_pks_order, start=1):
+        # find instance w/ the correct PK
+        userboard = next(u for u in userboards if u.pk == int(board_pk))
+
+        # add changed movies only to an updated_films list
+        if userboard.order != idx:
+            userboard.order = idx
+            updated_boards.append(userboard)
+
+        boards.append(userboard)
+
+    # bulk_update changed UserFilms's 'order' field
+    UserBoard.objects.bulk_update(updated_boards, ["order"])
+
+    paginator = Paginator(boards, settings.PAGINATE_BY)
+    page_number = len(board_pks_order) / settings.PAGINATE_BY
+    page_obj = paginator.get_page(page_number)
+    context = {"boards": boards, "page_obj": page_obj}
+
+    return render(request, "partials/board-list.html", context)
+
+
+@login_required
+def detail(request, pk):
+    userboard = get_object_or_404(UserBoard, pk=pk)
+    context = {"userboard": userboard}
+    return render(request, "partials/board-detail.html", context)
+
+
+@require_http_methods(["DELETE"])
+@login_required
+def delete_board(request, pk):
+    ...
+    # remove the film from the user's list
+    UserBoard.objects.get(pk=pk).delete()
+
+    reorder(request.user)
+
+    # return template fragment with all the user's films
+    boards = UserBoard.objects.filter(user=request.user)
+    return render(request, "partials/board-list.html", {"boards": boards})
+
+
+@login_required
+def search_board(request):
+    search_text = request.POST.get("search")
+
+    # look up all films that contain the text
+    # exclude user films
+    userboards = UserBoard.objects.filter(user=request.user)
+    results = Board.objects.filter(title__icontains=search_text).exclude(
+        title__in=userboards.values_list("board__title", flat=True)
+    )
+    context = {"results": results}
+    return render(request, "partials/search-results.html", context)
