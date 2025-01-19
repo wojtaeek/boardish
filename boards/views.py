@@ -17,6 +17,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.views import LogoutView
+from django.contrib import messages
+# almost all the comments come from a work this was based on so films essentially means boards
 
 
 class IndexView(TemplateView):
@@ -50,7 +52,7 @@ class BoardList(LoginRequiredMixin, ListView):
 
     def get_template_names(self):
         if self.request.htmx:
-            return "partials/film-list-elements.html"
+            return "partials/board-list-elements.html"
         return "boards.html"
 
     def get_queryset(self):
@@ -63,6 +65,18 @@ def index(request):
     boards = Board.objects.all()
     print(Board.objects.get.all())
     return render(request, "index.html", {"boards": boards})
+
+
+def check_username(request):
+    username = request.POST.get("username")
+    if get_user_model().objects.filter(username=username).exists():
+        return HttpResponse(
+            "<div id='username-error' class='error'>This username already exists</div>"
+        )
+    else:
+        return HttpResponse(
+            "<div id='username-error' class='success'>This username is available</div>"
+        )
 
 
 @require_POST
@@ -106,6 +120,28 @@ def board_list(request):
 
 
 @login_required
+def create_board(request):
+    title = request.POST.get("boardtitle")
+    if Board.objects.filter(title=title).exists():
+        messages.error(request, f"{title} already exists")
+        boards = UserBoard.objects.filter(user=request.user).order_by("order")
+        return render(request, "partials/board-list.html", {"boards": boards})
+    board = Board.objects.create(title=title)
+
+    UserBoard.objects.create(
+        board=board, user=request.user, order=get_max_order(request.user)
+    )
+
+    if Board.objects.filter(title=title, user=request.user).exists():
+        messages.error(request, "A board with this title already exists.")
+        return render(request, "partials/board-list.html", {"boards": boards})
+    boards = UserBoard.objects.filter(user=request.user).order_by("order")
+    messages.success(request, f"Created {title}")
+    # check if said title exists
+    return render(request, "partials/board-list.html", {"boards": boards})
+
+
+@login_required
 def add_board(request):
     title = request.POST.get("boardtitle")
 
@@ -116,8 +152,8 @@ def add_board(request):
             board=board, user=request.user, order=get_max_order(request.user)
         )
 
-    boards = Board.objects.filter(user=request.user)
-
+    boards = UserBoard.objects.filter(user=request.user).order_by("order")
+    messages.success(request, f"Added {title} to list of boards")
     return render(request, "partials/board-list.html", {"boards": boards})
 
 
@@ -168,7 +204,7 @@ def delete_board(request, pk):
     reorder(request.user)
 
     # return template fragment with all the user's films
-    boards = UserBoard.objects.filter(user=request.user)
+    boards = UserBoard.objects.filter(user=request.user).order_by("order")
     return render(request, "partials/board-list.html", {"boards": boards})
 
 
@@ -184,3 +220,7 @@ def search_board(request):
     )
     context = {"results": results}
     return render(request, "partials/search-results.html", context)
+
+
+def clear(request):
+    return HttpResponse("")

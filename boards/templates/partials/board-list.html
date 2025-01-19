@@ -1,10 +1,10 @@
 <div class="d-flex justify-content-between align-items-center">
     <p class="lead ml-0">My Boards</p>
-    <form hx-post="{% url 'add-board' %}" hx-target='#film-list' class="d-flex align-items-center">
+    <form hx-post="{% url 'create-board' %}" hx-target='#board-list' class="d-flex align-items-center">
         {% csrf_token %}
         <input type="text" id="boardtitle-input" name="boardtitle" class="form-control-sm mr-2"
             placeholder="Enter a board title" />
-        <button type="submit" class="btn btn-success btn-sm">Add Board</button>
+        <button type="submit" class="btn btn-success btn-sm">Create Board</button>
     </form>
 </div>
 <hr />
