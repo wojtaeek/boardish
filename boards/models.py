@@ -43,7 +43,7 @@ class Element(models.Model):
     type = models.CharField(max_length=50, choices=ELEMENT_TYPES, default="custom")
 
     data = models.JSONField(null=True, blank=True)
-    content = models.TextField(null=True, blank=True)
+    content = models.TextField(null=True, blank=True)  # tu wszystko upchać
 
     def __str__(self):
         return f"Element {self.id} ({self.type}) at ({self.x}, {self.y})"

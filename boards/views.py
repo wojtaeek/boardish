@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 import json
-from django.http.response import HttpResponse, HttpResponsePermanentRedirect
+from django.http.response import HttpResponse
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
@@ -18,6 +18,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.views import LogoutView
 from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
 # almost all the comments come from a work this was based on so films essentially means boards
 
 
@@ -86,31 +87,56 @@ def update_grid(request):
     return JsonResponse({"status": "success", "received_data": data})
 
 
-def board_view(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
+def board_view(request, pk):
+    board = get_object_or_404(Board, id=pk)
     elements = board.elements.order_by("order")
 
-    serialized_elements = []
-    for element in elements:
-        serialized_elements.append(
-            {
-                "id": element.id,
-                "x": element.x,
-                "y": element.y,
-                "w": element.w,
-                "h": element.h,
-                "content": element.content or "",
-            }
-        )
+    serialized_elements = [
+        {
+            "id": element.order,
+            "x": element.x,
+            "y": element.y,
+            "w": element.w,
+            "h": element.h,
+        }
+        for element in elements
+    ]
 
     return render(
         request,
-        "board_view.html",
+        "partials/board-detail.html",
         {
             "board": board,
             "serialized_elements": serialized_elements,
         },
     )
+
+
+@csrf_exempt
+def save_board(request, pk):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        board = get_object_or_404(Board, id=pk)
+
+        # Clear existing elements and replace with new data
+        board.elements.all().delete()
+
+        for item in data:
+            Element.objects.create(
+                board=board,
+                order=item.get("order", 0),
+                x=item.get("x", 0),
+                y=item.get("y", 0),
+                w=item.get("w", 1),
+                h=item.get("h", 1),
+                content=item.get("content", ""),
+                type=item.get("type", "custom"),
+                data=item.get("data", None),
+            )
+
+        return JsonResponse({"status": "success"})
+
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 @login_required
@@ -132,9 +158,6 @@ def create_board(request):
         board=board, user=request.user, order=get_max_order(request.user)
     )
 
-    if Board.objects.filter(title=title, user=request.user).exists():
-        messages.error(request, "A board with this title already exists.")
-        return render(request, "partials/board-list.html", {"boards": boards})
     boards = UserBoard.objects.filter(user=request.user).order_by("order")
     messages.success(request, f"Created {title}")
     # check if said title exists

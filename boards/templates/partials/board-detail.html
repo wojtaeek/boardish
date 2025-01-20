@@ -1,7 +1,6 @@
 <div>
-    <a hx-get="{% url 'board-list' %}" hx-target="#board-list" hx-push-url="/boards"
-        >back to boards</a>
-<div class="container-fluid">
+    <a hx-get="{% url 'board-list' %}" hx-target="#board-list" hx-push-url="/boards">back to boards</a>
+    <div class="container-fluid">
         <h1>Serialization demo</h1>
         <a onclick="saveGrid()" class="btn btn-primary" href="#">Save</a>
         <a onclick="loadGrid()" class="btn btn-primary" href="#">Load</a>
@@ -20,29 +19,10 @@
         GridStack.renderCB = function (el, w) {
             el.innerHTML = w.content;
         };
-
-        let serializedData = [
-            {x: 0, y: 0, w: 2, h: 2},
-            {
-                x: 2, y: 1, w: 2, h: 3,
-                content: `<button onclick=\"alert('clicked!')\">Press me</button><div>text area</div><div><textarea>tentego</textarea></div><div>Input Field</div><input type="text"><div contenteditable=\"true\">Editable Div</div><div class=\"no-drag\">no drag</div>`
-            },
-            {
-                x: 4, y: 1, content: `<form action="/action_page.php">
-  <input type="checkbox" id="vehicle1" name="vehicle1" value="Bike">
-  <label for="vehicle1"> I have a bike</label><br>
-  <input type="checkbox" id="vehicle2" name="vehicle2" value="Car">
-  <label for="vehicle2"> I have a car</label><br>
-  <input type="checkbox" id="vehicle3" name="vehicle3" value="Boat">
-  <label for="vehicle3"> I have a boat</label><br><br>
-  <input type="submit" value="Submit">
-</form>`},
-            {x: 1, y: 3},
-            {x: 2, y: 3, w: 3},
-        ];
+        let serializedData = {{serialized_elements | safe}};
         serializedData.forEach((n, i) => {
-            n.id = String(i);
-            n.content = `<button onclick="removeWidget(this.parentElement.parentElement)">X</button><br> ${i}<br> ${n.content ? n.content : ''}`;
+            //n.id = String(i);
+            n.content = `<button onclick="removeWidget(this.parentElement.parentElement)">X</button><br> ${n.id}<br> ${n.content ? n.content : ''}`;
         });
         let serializedFull;
 
@@ -98,6 +78,19 @@
             };
             grid.addWidget(n);
         };
-    // setTimeout(() => loadGrid(), 1000); // TEST force a second load which should be no-op
+
+        // event listener for grid moved widget
+        function addEvents(grid) {
+            grid.on('added', function (e, items) {
+                console.log('added', items);
+            });
+            grid.on('change', function (e, items) {
+                console.log('change', items);
+            });
+            grid.on('removed', function (e, items) {
+                console.log('removed', items);
+            });
+        }
+
     </script>
-    </div>
+</div>

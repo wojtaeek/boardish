@@ -20,10 +20,12 @@ htmx_patterns = [
     path("add-board/", views.add_board, name="add-board"),
     path("sort/", views.sort, name="sort"),
     path("board-list-partial", views.board_list, name="board-list-partial"),
-    path("detail/<int:pk>/", views.detail, name="detail"),
+    # path("detail/<int:pk>/", views.detail, name="detail"),
     path("delete-board/<int:pk>/", views.delete_board, name="delete-board"),
     path("search-board/", views.search_board, name="search-board"),
     path("clear/", views.clear, name="clear"),
+    path("detail/<int:pk>/", views.board_view, name="detail"),
+    path("detail/<int:pk>/save/", views.save_board, name="save-board"),
 ]
 
 urlpatterns += htmx_patterns

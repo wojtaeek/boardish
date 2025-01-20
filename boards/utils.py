@@ -1,5 +1,5 @@
 from django.db.models import Max
-from boards.models import UserBoard
+from boards.models import UserBoard, Board
 
 
 def get_max_order(user) -> int:
@@ -8,6 +8,15 @@ def get_max_order(user) -> int:
         return 1
     else:
         current_max = existing_films.aggregate(max_order=Max("order"))["max_order"]
+        return current_max + 1
+
+
+def get_max_order_elements(board) -> int:
+    existing_elements = Board.elements.all()
+    if not existing_elements.exists():
+        return 1
+    else:
+        current_max = existing_elements.aggregate(max_order=Max("order"))["max_order"]
         return current_max + 1
 
 

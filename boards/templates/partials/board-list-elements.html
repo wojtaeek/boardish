@@ -1,7 +1,7 @@
 {% for board in boards %}
 
 {% if forloop.last %}
-<div hx-get="{% url 'board-list' %}?page={{ page_obj.number|add:1 }}" hx-trigger="revealed" hx-swap="afterend"
+<div hx-get="{% url 'board-list' %}?page={{ page_obj.number|add:1 }}" hx-trigger="revealed" hx-swap="outerHTML"
     hx-target="this">
     {% else %}
     <div>
