@@ -1,14 +1,13 @@
-<div>
+<div class="col-0 align-left">
     <a hx-get="{% url 'board-list' %}" hx-target="#board-list" hx-push-url="/boards">back to boards</a>
     <div class="container-fluid">
-        <h1>Serialization demo</h1>
-        <a onclick="saveGrid()" class="btn btn-primary" href="#">Save</a>
+        <h3>{{board.title}}</h3>
+        <!--<a onclick="saveGrid()" class="btn btn-primary" href="#">Save</a>
         <a onclick="loadGrid()" class="btn btn-primary" href="#">Load</a>
         <a onclick="saveFullGrid()" class="btn btn-primary" href="#">Save Full</a>
         <a onclick="loadFullGrid()" class="btn btn-primary" href="#">Load Full</a>
         <a onclick="clearGrid()" class="btn btn-primary" href="#">Clear</a>
-        <a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>
-        <br /><br />
+<a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>-->
         <div id="gridCont">
             <div class="grid-stack"></div>
         </div>
@@ -22,56 +21,27 @@
         let serializedData = {{serialized_elements | safe}};
         serializedData.forEach((n, i) => {
             //n.id = String(i);
-            n.content = `<button onclick="removeWidget(this.parentElement.parentElement)">X</button><br> ${n.id}<br> ${n.content ? n.content : ''}`;
+            n.content = `<button onClick="grid.removeWidget(this.parentNode.parentNode)" hx-confirm="Are you sure you wish to delete?">x</button><br> ${n.id}<br> ${n.content ? n.content : ''}`;
         });
         let serializedFull;
 
         let grid = GridStack.init({
-            minRow: 1, // don't let it collapse when empty
+            minRow: 11, // don't let it collapse when empty
             cellHeight: 80,
             float: true,
             draggable: {cancel: '.no-drag'} // example of additional custom elements to skip drag on
         }).load(serializedData);
         addEvents(grid);
 
-        // 2.x method - just saving list of widgets with content (default)
-        function loadGrid() {
-            grid.load(serializedData);
-        }
-
-        // 2.x method
-        function saveGrid() {
-            delete serializedFull;
-            serializedData = grid.save();
-            document.querySelector('#saved-data').value = JSON.stringify(serializedData, null, '  ');
-        }
-
-        // 3.1 full method saving the grid options + children (which is recursive for nested grids)
-        function saveFullGrid() {
-            serializedFull = grid.save(true, true);
-            serializedData = serializedFull.children;
-            document.querySelector('#saved-data').value = JSON.stringify(serializedFull, null, '  ');
-        }
-
-        // 3.1 full method to reload from scratch - delete the grid and add it back from JSON
-        function loadFullGrid() {
-            if (!serializedFull) return;
-            grid.destroy(true); // nuke everything
-            grid = GridStack.addGrid(document.querySelector('#gridCont'), serializedFull)
-        }
-
-        function clearGrid() {
-            grid.removeAll();
-        }
-
         function removeWidget(el) {
-            // TEST removing from DOM first like Angular/React/Vue would do
             el.remove();
             grid.removeWidget(el, false);
         }
 
         function addWidget() {
             let n = {
+                x: 0,
+                y: 0,
                 w: Math.round(1 + 3 * Math.random()),
                 h: Math.round(1 + 3 * Math.random()),
                 content: '<button onClick="grid.removeWidget(this.parentNode.parentNode)">X</button><br>',
@@ -79,18 +49,43 @@
             grid.addWidget(n);
         };
 
-        // event listener for grid moved widget
         function addEvents(grid) {
-            grid.on('added', function (e, items) {
-                console.log('added', items);
+            grid.on('added removed change', function (event, items) {
+                if (!items || items.length === 0) {
+                    console.log('No items changed.');
+                    return;
+                }
+
+                if (event.type === 'change') {
+                    items.forEach(function (item) {
+                        htmx.ajax('POST', `/update-element/`, {
+                            headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                            target: null,
+                            values: {
+                                id: item.id,
+                                x: item.x,
+                                y: item.y,
+                                w: item.w,
+                                h: item.h,
+                                pk: {{board.id}},
+                    }
             });
-            grid.on('change', function (e, items) {
-                console.log('change', items);
-            });
-            grid.on('removed', function (e, items) {
-                console.log('removed', items);
+        });
+        } else if (event.type === 'removed') {
+            items.forEach(function (item) {
+                htmx.ajax('DELETE', `/delete-element/`, {
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    target: null,
+                    values: {
+                        id: item.id,
+                        pk: {{board.id}},
+                    }
+                });
             });
         }
+    });
+}
+
 
     </script>
 </div>

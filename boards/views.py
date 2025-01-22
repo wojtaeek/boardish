@@ -19,7 +19,6 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.views import LogoutView
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
-# almost all the comments come from a work this was based on so films essentially means boards
 
 
 class IndexView(TemplateView):
@@ -87,9 +86,20 @@ def update_grid(request):
     return JsonResponse({"status": "success", "received_data": data})
 
 
+@login_required
 def board_view(request, pk):
-    board = get_object_or_404(Board, id=pk)
+    board_id = get_object_or_404(UserBoard, id=pk).board_id
+    board = get_object_or_404(Board, id=board_id)
     elements = board.elements.order_by("order")
+
+    for element in elements:
+        match element.type:
+            case "button":
+                element.content = f"<button>{element.content}</button>"
+            case "text":
+                element.content = f"<textarea>{element.content}</textarea>"
+            case "image":
+                element.content = f"<img src='{element.content}' />"
 
     serialized_elements = [
         {
@@ -98,6 +108,7 @@ def board_view(request, pk):
             "y": element.y,
             "w": element.w,
             "h": element.h,
+            "content": element.content,
         }
         for element in elements
     ]
@@ -119,7 +130,7 @@ def save_board(request, pk):
         board = get_object_or_404(Board, id=pk)
 
         # Clear existing elements and replace with new data
-        board.elements.all().delete()
+        # board.elements.all().delete() #man do i not like this
 
         for item in data:
             Element.objects.create(
@@ -147,21 +158,27 @@ def board_list(request):
 
 @login_required
 def create_board(request):
+    board_pks_order = request.POST.getlist("board_order")
     title = request.POST.get("boardtitle")
     if Board.objects.filter(title=title).exists():
         messages.error(request, f"{title} already exists")
         boards = UserBoard.objects.filter(user=request.user).order_by("order")
         return render(request, "partials/board-list.html", {"boards": boards})
-    board = Board.objects.create(title=title)
+    else:
+        board = Board.objects.create(title=title)
+        UserBoard.objects.create(
+            board=board, user=request.user, order=get_max_order(request.user)
+        )
 
-    UserBoard.objects.create(
-        board=board, user=request.user, order=get_max_order(request.user)
-    )
+        boards = UserBoard.objects.filter(user=request.user)
+        messages.success(request, f"Created {title}")
+        # check if said title exists
+        paginator = Paginator(boards, settings.PAGINATE_BY)
+        page_number = len(board_pks_order) / settings.PAGINATE_BY
+        page_obj = paginator.get_page(page_number)
+        context = {"boards": boards, "page_obj": page_obj}
 
-    boards = UserBoard.objects.filter(user=request.user).order_by("order")
-    messages.success(request, f"Created {title}")
-    # check if said title exists
-    return render(request, "partials/board-list.html", {"boards": boards})
+        return render(request, "partials/board-list.html", context)
 
 
 @login_required
@@ -175,9 +192,15 @@ def add_board(request):
             board=board, user=request.user, order=get_max_order(request.user)
         )
 
-    boards = UserBoard.objects.filter(user=request.user).order_by("order")
+    boards = UserBoard.objects.filter(user=request.user)
     messages.success(request, f"Added {title} to list of boards")
-    return render(request, "partials/board-list.html", {"boards": boards})
+    board_pks_order = request.POST.getlist("board_order")
+    paginator = Paginator(boards, settings.PAGINATE_BY)
+    page_number = len(board_pks_order) / settings.PAGINATE_BY
+    page_obj = paginator.get_page(page_number)
+    context = {"boards": boards, "page_obj": page_obj}
+
+    return render(request, "partials/board-list.html", context)
 
 
 def sort(request):
@@ -217,6 +240,12 @@ def detail(request, pk):
     return render(request, "partials/board-detail.html", context)
 
 
+@login_required
+def boards_partial(request):
+    boards = UserBoard.objects.filter(user=request.user)
+    return render(request, "partials/board-list.html", {"boards": boards})
+
+
 @require_http_methods(["DELETE"])
 @login_required
 def delete_board(request, pk):
@@ -228,7 +257,13 @@ def delete_board(request, pk):
 
     # return template fragment with all the user's films
     boards = UserBoard.objects.filter(user=request.user).order_by("order")
-    return render(request, "partials/board-list.html", {"boards": boards})
+    board_pks_order = request.POST.getlist("board_order")
+    paginator = Paginator(boards, settings.PAGINATE_BY)
+    page_number = len(board_pks_order) / settings.PAGINATE_BY
+    page_obj = paginator.get_page(page_number)
+    context = {"boards": boards, "page_obj": page_obj}
+
+    return render(request, "partials/board-list.html", context)
 
 
 @login_required
@@ -247,3 +282,29 @@ def search_board(request):
 
 def clear(request):
     return HttpResponse("")
+
+
+# elements
+@login_required
+def update_element(request):
+    board_id = request.POST.get("pk")
+    board = get_object_or_404(Board, id=board_id)
+    order = request.POST.get("id")
+    element = get_object_or_404(Element, order=order, board=board)
+    element.x = request.POST.get("x")
+    element.y = request.POST.get("y")
+    element.w = request.POST.get("w")
+    element.h = request.POST.get("h")
+    element.save()
+
+    return HttpResponse(status=204)  # this works TvT
+
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_element(request):
+    id = request.GET.get("id")
+    pk = request.GET.get("pk")
+    element = get_object_or_404(Element, order=id, board=pk)
+    element.delete()
+    return HttpResponse(status=204)

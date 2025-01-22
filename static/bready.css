@@ -22,3 +22,8 @@ body {
 	background-position: 0 0, 6px 6px, 12px 12px;
 	color: #EEE;
 }
+
+.col6, .col12 {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}

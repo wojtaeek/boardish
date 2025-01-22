@@ -34,7 +34,7 @@ class Element(models.Model):
 
     ELEMENT_TYPES = [
         ("button", "Button"),
-        ("form", "Form"),
+        ("text", "Text"),
         ("image", "Image"),
         ("clock", "Clock"),
         ("paint", "Paint"),

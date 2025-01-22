@@ -15,7 +15,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridstack.js/7.2.1/gridstack.min.css" />
 </head>
 
-<body>
+<body><div class="grid-stack">
+          <div class="grid-stack-item" data-id="1" data-gs-x="0" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+            <div class="grid-stack-item-content">Widget 1</div>
+          </div>
+          <div class="grid-stack-item" data-id="2" data-gs-x="2" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+            <div class="grid-stack-item-content">Widget 2</div>
+          </div>
     <div class="container-fluid">
         <h1>Serialization demo</h1>
         <a onclick="saveGrid()" class="btn btn-primary" href="#">Save</a>
@@ -26,7 +32,14 @@
         <a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>
         <br /><br />
         <div id="gridCont">
-            <div class="grid-stack"></div>
+        <div class="grid-stack">
+          <div class="grid-stack-item" data-id="1" data-gs-x="0" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+            <div class="grid-stack-item-content">Widget 1</div>
+          </div>
+          <div class="grid-stack-item" data-id="2" data-gs-x="2" data-gs-y="0" data-gs-width="2" data-gs-height="2">
+            <div class="grid-stack-item-content">Widget 2</div>
+          </div>
+        </div>
         </div>
         <hr />
         <textarea id="saved-data" style="width: 100%" cols="100" rows="20" readonly="readonly"></textarea>
