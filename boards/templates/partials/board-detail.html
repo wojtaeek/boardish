@@ -1,13 +1,20 @@
 <div class="col-0 align-left">
-    <a hx-get="{% url 'board-list' %}" hx-target="#board-list" hx-push-url="/boards">back to boards</a>
+    <a hx-get="{% url 'board-list-partial' %}" hx-target="#board-list" hx-push-url="/boards" hx-swap="innerHTML">back to
+        boards</a>
+    <a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>
     <div class="container-fluid">
         <h3>{{board.title}}</h3>
-        <!--<a onclick="saveGrid()" class="btn btn-primary" href="#">Save</a>
-        <a onclick="loadGrid()" class="btn btn-primary" href="#">Load</a>
-        <a onclick="saveFullGrid()" class="btn btn-primary" href="#">Save Full</a>
-        <a onclick="loadFullGrid()" class="btn btn-primary" href="#">Load Full</a>
-        <a onclick="clearGrid()" class="btn btn-primary" href="#">Clear</a>
-<a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>-->
+        <div class="add-widget-form">
+            <form hx-post="{% url 'add-widget' board.id %}" hx-target="#gridCont" hx-swap="none">
+                <label for="widget-type">Select Widget Type:</label>
+                <select name="widget_type" id="widget-type" class="form-select">
+                    <option value="text">Note (Text Area)</option>
+                    <option value="image">Picture (Image)</option>
+                    <option value="custom">Custom Widget</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Add Widget</button>
+            </form>
+        </div>
         <div id="gridCont">
             <div class="grid-stack"></div>
         </div>
@@ -21,7 +28,9 @@
         let serializedData = {{serialized_elements | safe}};
         serializedData.forEach((n, i) => {
             //n.id = String(i);
-            n.content = `<button onClick="grid.removeWidget(this.parentNode.parentNode)" hx-confirm="Are you sure you wish to delete?">x</button><br> ${n.id}<br> ${n.content ? n.content : ''}`;
+            n.content = `<button onClick="grid.removeWidget(this.parentNode.parentNode)" 
+style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer;"
+>x</button><br> ${n.content ? n.content : ''}`;
         });
         let serializedFull;
 
@@ -68,10 +77,11 @@
                                 w: item.w,
                                 h: item.h,
                                 pk: {{board.id}},
-                    }
+                            }
             });
         });
-        } else if (event.type === 'removed') {
+                } 
+                else if (event.type === 'removed') {
             items.forEach(function (item) {
                 htmx.ajax('DELETE', `/delete-element/`, {
                     headers: {'X-CSRFToken': '{{ csrf_token }}'},
@@ -79,13 +89,29 @@
                     values: {
                         id: item.id,
                         pk: {{board.id}},
-                    }
-                });
+                            }
+                        });
+                    });
+                }
             });
         }
-    });
-}
 
+
+        document.addEventListener('htmx:afterRequest', function (e) {
+            if (e.detail.elt && e.detail.elt.classList.contains('add-widget-button')) {
+                const data = JSON.parse(e.detail.xhr.responseText);
+
+                let n = {
+                    x: data.x,
+                    y: data.y,
+                    w: data.w,
+                    h: data.h,
+                    content: data.content
+                };
+                grid.addWidget(n);
+
+            }
+        });
 
     </script>
 </div>

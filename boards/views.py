@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from boards.models import Board, Element, UserBoard
 from boards.forms import RegisterForm
 from django.contrib.auth.decorators import login_required
-from boards.utils import get_max_order, reorder
+from boards.utils import get_max_order, reorder, get_max_order_elements
 from django.views.generic import ListView
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -19,6 +19,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.views import LogoutView
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.html import escape
 
 
 class IndexView(TemplateView):
@@ -84,43 +85,6 @@ def update_grid(request):
     data = json.loads(request.body)
     print("Received data:", data)  # This logs to the console
     return JsonResponse({"status": "success", "received_data": data})
-
-
-@login_required
-def board_view(request, pk):
-    board_id = get_object_or_404(UserBoard, id=pk).board_id
-    board = get_object_or_404(Board, id=board_id)
-    elements = board.elements.order_by("order")
-
-    for element in elements:
-        match element.type:
-            case "button":
-                element.content = f"<button>{element.content}</button>"
-            case "text":
-                element.content = f"<textarea>{element.content}</textarea>"
-            case "image":
-                element.content = f"<img src='{element.content}' />"
-
-    serialized_elements = [
-        {
-            "id": element.order,
-            "x": element.x,
-            "y": element.y,
-            "w": element.w,
-            "h": element.h,
-            "content": element.content,
-        }
-        for element in elements
-    ]
-
-    return render(
-        request,
-        "partials/board-detail.html",
-        {
-            "board": board,
-            "serialized_elements": serialized_elements,
-        },
-    )
 
 
 @csrf_exempt
@@ -286,6 +250,43 @@ def clear(request):
 
 # elements
 @login_required
+def board_view(request, pk):
+    board_id = get_object_or_404(UserBoard, id=pk).board_id
+    board = get_object_or_404(Board, id=board_id)
+    elements = board.elements.order_by("order")
+
+    for element in elements:
+        match element.type:
+            case "button":
+                element.content = f"<button>{element.content}</button>"
+            case "text":
+                element.content = f'<textarea style="width: 100%; height: 100%;">{element.content}</textarea>'
+            case "image":
+                element.content = f"<img src='{element.content}' />"
+
+    serialized_elements = [
+        {
+            "id": element.order,
+            "x": element.x,
+            "y": element.y,
+            "w": element.w,
+            "h": element.h,
+            "content": element.content,
+        }
+        for element in elements
+    ]
+
+    return render(
+        request,
+        "partials/board-detail.html",
+        {
+            "board": board,
+            "serialized_elements": serialized_elements,
+        },
+    )
+
+
+@login_required
 def update_element(request):
     board_id = request.POST.get("pk")
     board = get_object_or_404(Board, id=board_id)
@@ -308,3 +309,49 @@ def delete_element(request):
     element = get_object_or_404(Element, order=id, board=pk)
     element.delete()
     return HttpResponse(status=204)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_widget(request, pk):
+    widget_type = request.POST.get("widget_type", "custom")
+    board = get_object_or_404(Board, id=pk)
+
+    # Determine the content of the widget based on the type
+    match widget_type:
+        case "text":
+            content = "miłego dnia"
+        case "image":
+            content = ""
+        case _:
+            content = ""
+
+    element = Element.objects.create(
+        board=board,
+        order=get_max_order_elements(board),
+        x=0,
+        y=0,
+        w=2,
+        h=2,
+        content=escape(content),
+        type=widget_type,
+    )
+
+    match element.type:
+        case "button":
+            element.content = f"<button>{element.content}</button>"
+        case "text":
+            element.content = f'<textarea style="width: 100%; height: 100%;">{element.content}</textarea>'
+        case "image":
+            element.content = f"<img src='{element.content}' />"
+
+    serialized_element = {
+        "id": element.order,
+        "x": element.x,
+        "y": element.y,
+        "w": element.w,
+        "h": element.h,
+        "content": element.content,
+    }
+    return JsonResponse(serialized_element)

@@ -1,5 +1,5 @@
 from django.db.models import Max
-from boards.models import UserBoard, Board
+from boards.models import UserBoard, Element
 
 
 def get_max_order(user) -> int:
@@ -12,7 +12,7 @@ def get_max_order(user) -> int:
 
 
 def get_max_order_elements(board) -> int:
-    existing_elements = Board.elements.all()
+    existing_elements = Element.objects.filter(board=board)
     if not existing_elements.exists():
         return 1
     else:
