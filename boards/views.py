@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 import json
 from django.http.response import HttpResponse
 from django.contrib.auth.views import LoginView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import FormView, TemplateView
 from django.contrib.auth import get_user_model
 from boards.models import Board, Element, UserBoard
@@ -20,6 +20,7 @@ from django.contrib.auth.views import LogoutView
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.html import escape
+import base64
 
 
 class IndexView(TemplateView):
@@ -41,7 +42,7 @@ class RegisterView(FormView):
     success_url = reverse_lazy("login")
 
     def form_valid(self, form):
-        form.save()  # save the user
+        form.save()
         return super().form_valid(form)
 
 
@@ -83,7 +84,7 @@ def check_username(request):
 @require_POST
 def update_grid(request):
     data = json.loads(request.body)
-    print("Received data:", data)  # This logs to the console
+    print("Received data:", data)
     return JsonResponse({"status": "success", "received_data": data})
 
 
@@ -92,9 +93,6 @@ def save_board(request, pk):
     if request.method == "POST":
         data = json.loads(request.body)
         board = get_object_or_404(Board, id=pk)
-
-        # Clear existing elements and replace with new data
-        # board.elements.all().delete() #man do i not like this
 
         for item in data:
             Element.objects.create(
@@ -127,22 +125,20 @@ def create_board(request):
     if Board.objects.filter(title=title).exists():
         messages.error(request, f"{title} already exists")
         boards = UserBoard.objects.filter(user=request.user).order_by("order")
-        return render(request, "partials/board-list.html", {"boards": boards})
     else:
         board = Board.objects.create(title=title)
         UserBoard.objects.create(
             board=board, user=request.user, order=get_max_order(request.user)
         )
-
         boards = UserBoard.objects.filter(user=request.user)
         messages.success(request, f"Created {title}")
-        # check if said title exists
-        paginator = Paginator(boards, settings.PAGINATE_BY)
-        page_number = len(board_pks_order) / settings.PAGINATE_BY
-        page_obj = paginator.get_page(page_number)
-        context = {"boards": boards, "page_obj": page_obj}
 
-        return render(request, "partials/board-list.html", context)
+    paginator = Paginator(boards, settings.PAGINATE_BY)
+    page_number = len(board_pks_order) / settings.PAGINATE_BY
+    page_obj = paginator.get_page(page_number)
+    context = {"boards": boards, "page_obj": page_obj}
+
+    return render(request, "partials/board-list.html", context)
 
 
 @login_required
@@ -172,21 +168,17 @@ def sort(request):
     boards = []
     updated_boards = []
 
-    # fetch user's films in advance (rather than once per loop)
     userboards = UserBoard.objects.prefetch_related("board").filter(user=request.user)
 
     for idx, board_pk in enumerate(board_pks_order, start=1):
-        # find instance w/ the correct PK
         userboard = next(u for u in userboards if u.pk == int(board_pk))
 
-        # add changed movies only to an updated_films list
         if userboard.order != idx:
             userboard.order = idx
             updated_boards.append(userboard)
 
         boards.append(userboard)
 
-    # bulk_update changed UserFilms's 'order' field
     UserBoard.objects.bulk_update(updated_boards, ["order"])
 
     paginator = Paginator(boards, settings.PAGINATE_BY)
@@ -213,13 +205,10 @@ def boards_partial(request):
 @require_http_methods(["DELETE"])
 @login_required
 def delete_board(request, pk):
-    ...
-    # remove the film from the user's list
     UserBoard.objects.get(pk=pk).delete()
 
     reorder(request.user)
 
-    # return template fragment with all the user's films
     boards = UserBoard.objects.filter(user=request.user).order_by("order")
     board_pks_order = request.POST.getlist("board_order")
     paginator = Paginator(boards, settings.PAGINATE_BY)
@@ -234,8 +223,6 @@ def delete_board(request, pk):
 def search_board(request):
     search_text = request.POST.get("search")
 
-    # look up all films that contain the text
-    # exclude user films
     userboards = UserBoard.objects.filter(user=request.user)
     results = Board.objects.filter(title__icontains=search_text).exclude(
         title__in=userboards.values_list("board__title", flat=True)
@@ -260,9 +247,39 @@ def board_view(request, pk):
             case "button":
                 element.content = f"<button>{element.content}</button>"
             case "text":
-                element.content = f'<textarea style="width: 100%; height: 100%;">{element.content}</textarea>'
+                element.content = f"""
+    <div class="textarea-container">
+    <div id="font-buttons" style="margin-bottom: 10px;">
+        <button id="increase-font" type="button" onclick="adjustFontSize(this, 'increase')">Increase Font</button>
+        <button id="decrease-font" type="button" onclick="adjustFontSize(this, 'decrease')">Decrease Font</button>
+    </div>
+
+    <form hx-post="{reverse('update-textarea-content')}" hx-trigger="keyup changed delay:500ms" hx-include="[name=content]" hx-target="this">
+        <input type="hidden" name="note_id" value="{element.id}">
+        <input type="hidden" name="board_id" value="{board.id}">
+        <textarea name="content" style="width: 100%; height: 100%; box-sizing: border-box; margin: 0; padding: 0; font-size: 16px;">{element.content}</textarea>
+    </form>
+    </div>"""
             case "image":
-                element.content = f"<img src='{element.content}' />"
+                element.content = f"""
+    <div class="image-container">
+    <div id="image-buttons" style="margin-bottom: 10px;">
+        <button id="original" type="button" onclick="scaleImage(this, 'original')">Original Resolution</button>
+        <button id="scaled" type="button" onclick="scaleImage(this, 'scaled')">Fit to Container</button>
+    </div>
+
+    <img src="{element.content}" class="image" />
+
+    <form id="form" hx-post="{reverse('upload-image')}" hx-trigger="submit" hx-target="this" hx-swap="outerHTML">
+        <input type="hidden" name="widget_id" value="{element.id}">
+        <input type="hidden" name="board_id" value="{board.id}">
+        <input type="hidden" name="content" id="content">
+        <br><br><br>
+        <input type="file" name="file" id="file-input" accept="image/*">
+        <button type="submit">Upload</button>
+        <progress id="progress" value="0" max="100"></progress>
+    </form>
+"""
 
     serialized_elements = [
         {
@@ -298,7 +315,7 @@ def update_element(request):
     element.h = request.POST.get("h")
     element.save()
 
-    return HttpResponse(status=204)  # this works TvT
+    return HttpResponse(status=204)
 
 
 @login_required
@@ -318,7 +335,6 @@ def add_widget(request, pk):
     widget_type = request.POST.get("widget_type", "custom")
     board = get_object_or_404(Board, id=pk)
 
-    # Determine the content of the widget based on the type
     match widget_type:
         case "text":
             content = "miłego dnia"
@@ -337,15 +353,6 @@ def add_widget(request, pk):
         content=escape(content),
         type=widget_type,
     )
-
-    match element.type:
-        case "button":
-            element.content = f"<button>{element.content}</button>"
-        case "text":
-            element.content = f'<textarea style="width: 100%; height: 100%;">{element.content}</textarea>'
-        case "image":
-            element.content = f"<img src='{element.content}' />"
-
     serialized_element = {
         "id": element.order,
         "x": element.x,
@@ -355,3 +362,43 @@ def add_widget(request, pk):
         "content": element.content,
     }
     return JsonResponse(serialized_element)
+
+
+@csrf_exempt
+def update_textarea_content(request):
+    if request.method == "POST":
+        note_id = request.POST.get("note_id")
+        new_content = request.POST.get("content")
+        board_id = request.POST.get("board_id")
+
+        try:
+            note = Element.objects.get(id=note_id, board_id=board_id)
+            note.content = new_content
+            note.save()
+            return HttpResponse(status=204)
+        except Element.DoesNotExist:
+            return JsonResponse(
+                {"status": "error", "message": "Note not found"}, status=404
+            )
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+
+def upload_image(request):
+    if request.method == "POST":
+        widget_id = request.POST.get("widget_id")
+        board_id = request.POST.get("board_id")
+        base64_image = request.POST.get("content")
+
+        if base64_image:
+            header, base64_data = base64_image.split(",", 1)
+            image_data = base64.b64decode(base64_data)
+
+            element = get_object_or_404(Element, id=widget_id, board_id=board_id)
+            element.content = f"{base64_image}"
+            element.save()
+
+            return JsonResponse(
+                {"message": "Image uploaded successfully", "content": element.content}
+            )
+
+        return JsonResponse({"error": "Invalid image data"}, status=400)

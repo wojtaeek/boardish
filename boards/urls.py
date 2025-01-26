@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import path, re_path
 from django.contrib import admin
 from boards import views
 from django.contrib.auth.views import LogoutView
+from django.shortcuts import redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -10,7 +11,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("register/", views.RegisterView.as_view(), name="register"),
     path("boards/", views.BoardList.as_view(), name="board-list"),
-    # re_path(r"^$", lambda request: redirect("/index/", permanent=True)),
+    re_path(r"^$", lambda request: redirect("/index/", permanent=True)),
 ]
 
 htmx_patterns = [
@@ -25,9 +26,16 @@ htmx_patterns = [
     path("clear/", views.clear, name="clear"),
     path("detail/<int:pk>/", views.board_view, name="detail"),
     path("detail/<int:pk>/save/", views.save_board, name="save-board"),
+    path("boards/<int:pk>/", lambda request, pk: redirect("board-list")),
     path("update-element/", views.update_element, name="update_element"),
     path("delete-element/", views.delete_element, name="delete_element"),
     path("add-widget/<int:pk>/", views.add_widget, name="add-widget"),
+    path(
+        "update-textarea-content/",
+        views.update_textarea_content,
+        name="update-textarea-content",
+    ),
+    path("upload-image/", views.upload_image, name="upload-image"),
 ]
 
 urlpatterns += htmx_patterns

@@ -1,10 +1,10 @@
 <div class="col-0 align-left">
-    <a hx-get="{% url 'board-list-partial' %}" hx-target="#board-list" hx-push-url="/boards" hx-swap="innerHTML">back to
+    <a id="backtoboard" hx-get="{% url 'board-list-partial' %}" hx-target="#board-list" hx-push-url="/boards"
+        hx-swap="innerHTML">back to
         boards</a>
-    <a onclick="addWidget()" class="btn btn-primary" href="#">Add Widget</a>
     <div class="container-fluid">
-        <h3>{{board.title}}</h3>
-        <div class="add-widget-form">
+        <h3 style="margin: 5px;">{{board.title}}</h3>
+        <div class="add-widget-form" style="margin-left: 5px">
             <form hx-post="{% url 'add-widget' board.id %}" hx-target="#gridCont" hx-swap="none">
                 <label for="widget-type">Select Widget Type:</label>
                 <select name="widget_type" id="widget-type" class="form-select">
@@ -12,40 +12,33 @@
                     <option value="image">Picture (Image)</option>
                     <option value="custom">Custom Widget</option>
                 </select>
-                <button type="submit" class="btn btn-primary">Add Widget</button>
+                <button id="add-widget-button" type="submit" class="btn btn-primary">Add Widget</button>
             </form>
         </div>
         <div id="gridCont">
             <div class="grid-stack"></div>
         </div>
-        <textarea id="saved-data" style="width: 100%" cols="100" rows="20" readonly="readonly"></textarea>
     </div>
     <script type="text/javascript">
         // NOTE: REAL apps would sanitize-html or DOMPurify before blinding setting innerHTML. see #2736
         GridStack.renderCB = function (el, w) {
             el.innerHTML = w.content;
         };
-        let serializedData = {{serialized_elements | safe}};
+        var serializedData = {{serialized_elements | safe}};
         serializedData.forEach((n, i) => {
-            //n.id = String(i);
             n.content = `<button onClick="grid.removeWidget(this.parentNode.parentNode)" 
 style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer;"
 >x</button><br> ${n.content ? n.content : ''}`;
         });
-        let serializedFull;
+        var serializedFull;
 
-        let grid = GridStack.init({
+        var grid = GridStack.init({
             minRow: 11, // don't let it collapse when empty
             cellHeight: 80,
             float: true,
             draggable: {cancel: '.no-drag'} // example of additional custom elements to skip drag on
         }).load(serializedData);
         addEvents(grid);
-
-        function removeWidget(el) {
-            el.remove();
-            grid.removeWidget(el, false);
-        }
 
         function addWidget() {
             let n = {
@@ -64,7 +57,6 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
                     console.log('No items changed.');
                     return;
                 }
-
                 if (event.type === 'change') {
                     items.forEach(function (item) {
                         htmx.ajax('POST', `/update-element/`, {
@@ -96,22 +88,31 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
             });
         }
 
+        function adjustFontSize(button, action) {
+            const container = button.closest('.textarea-container');
+            const textarea = container.querySelector('textarea');
+            const currentFontSize = parseFloat(window.getComputedStyle(textarea).fontSize);
 
-        document.addEventListener('htmx:afterRequest', function (e) {
-            if (e.detail.elt && e.detail.elt.classList.contains('add-widget-button')) {
-                const data = JSON.parse(e.detail.xhr.responseText);
-
-                let n = {
-                    x: data.x,
-                    y: data.y,
-                    w: data.w,
-                    h: data.h,
-                    content: data.content
-                };
-                grid.addWidget(n);
-
+            let newFontSize;
+            if (action === 'increase') {
+                newFontSize = currentFontSize + 2;
+            } else if (action === 'decrease') {
+                newFontSize = currentFontSize - 2;
             }
+
+            textarea.style.fontSize = newFontSize + 'px';
+        }
+
+        document.querySelector('.add-widget-form').addEventListener('submit', function (event) {
+            setTimeout(() => {
+                htmx.ajax('GET', '/detail/{{board.id}}/', {
+                    target: '#board-list',
+                    swap: 'innerHTML',
+                });
+            }, 100);
+
         });
+
 
     </script>
 </div>

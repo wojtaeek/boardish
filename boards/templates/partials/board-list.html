@@ -1,5 +1,5 @@
-<div class="d-flex justify-content-between align-items-center">
-    <p class="lead ml-0">My Boards</p>
+<div class="d-flex justify-content-between align-items-center col-10">
+    <p class="lead ml-0" style="padding: 10px">My Boards</p>
     <form hx-post="{% url 'create-board' %}" hx-target='#board-list' class="d-flex align-items-center">
         {% csrf_token %}
         <input type="text" id="boardtitle-input" name="boardtitle" class="form-control-sm mr-2"
@@ -24,7 +24,8 @@
         {% if boards %}
 
         {% csrf_token %}
-        <form class="sortable list-group" hx-trigger="end" hx-post="{% url 'sort' %}" hx-target="#board-list">
+        <form class="sortable list-group col-6 offset-4" hx-trigger="end" hx-post="{% url 'sort' %}"
+            hx-target="#board-list" style="padding-left: 1vw">
             <div class="htmx-indicator">Updating...</div>
             {% include 'partials/board-list-elements.html' %}
         </form>

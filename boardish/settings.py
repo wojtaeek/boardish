@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from django.urls import reverse_lazy
+import os
 
+DB_HOST = os.environ.get("DB_HOST", "localhost")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,7 +28,7 @@ SECRET_KEY = "django-insecure-fm1!+vx51+8s+!$@1g&=vn*qtf3#8#31gytx8uhmdv%k5w24yb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -87,7 +89,7 @@ DATABASES = {
         "NAME": "boardish",
         "USER": "bog",
         "PASSWORD": "backtothebog",
-        "HOST": "localhost",
+        "HOST": DB_HOST,
         "PORT": "5432",
     }
 }
@@ -142,6 +144,8 @@ LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
 PAGINATE_BY = 25
+# temporary??
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 """
 LOGGING = {
     "version": 1,
