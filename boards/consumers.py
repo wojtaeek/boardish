@@ -19,6 +19,7 @@ class BoardUpdateConsumer(WebsocketConsumer):
         )
 
     def instance_created(self, event):
+        print("INSTANCE WAS CREATED!")
         self.send(
             text_data=json.dumps(
                 {
@@ -45,6 +46,17 @@ class BoardUpdateConsumer(WebsocketConsumer):
                     "w": event["w"],
                     "h": event["h"],
                     "content": event["content"],
+                }
+            )
+        )
+
+    def instance_deleted(self, event):
+        print("INSTANCE WAS DELETED SIGNAL")
+        self.send(
+            text_data=json.dumps(
+                {
+                    "type": "deleted",
+                    "id": event["id"],
                 }
             )
         )

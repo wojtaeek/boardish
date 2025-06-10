@@ -1,13 +1,16 @@
 <div class="col-0 align-left" hx-ext="ws" ws-connect="/ws/board-update/{{ board.id }}">
-    <a id="backtoboard" hx-get="{% url 'board-list-partial' %}" hx-target="#board-list" hx-push-url="/boards"
-        hx-swap="innerHTML">back to
-        boards</a>
-    <div class="container-fluid">
-        <h3 style="margin: 5px;">{{board.title}}</h3>
-        <div class="add-widget-form" style="margin-left: 5px">
-            <form hx-post="{% url 'add-widget' board.id %}" hx-target="#gridCont" hx-swap="none">
-                <label for="widget-type">Select Widget Type:</label>
-                <select name="widget_type" id="widget-type" class="form-select">
+
+<div class="container-fluid">
+    <div class="row align-items-center" style="margin: 5px;">
+        <!-- Title -->
+        <div class="col-2">
+            <h2 class="mb-0">{{ board.title }}</h2>
+        </div>
+
+        <!-- Add Widget Form -->
+        <div class="col-4">
+            <form class="d-flex align-items-center" hx-post="{% url 'add-widget' board.id %}" hx-target="#gridCont" hx-swap="none">
+                <select name="widget_type" id="widget-type" class="form-select me-2">
                     <option value="text">Note (Text Area)</option>
                     <option value="image">Picture (Image)</option>
                     <option value="custom">Custom Widget</option>
@@ -15,10 +18,23 @@
                 <button id="add-widget-button" type="submit" class="btn btn-primary">Add Widget</button>
             </form>
         </div>
+
+        <!-- Back to Boards Link -->
+        <div class="col-1 offset-5">
+            <a id="backtoboard" 
+               hx-get="{% url 'board-list-partial' %}" 
+               hx-target="#board-list" 
+               hx-push-url="/boards" 
+               hx-swap="innerHTML">
+               back to boards
+            </a>
+        </div>
+    </div>
+</div>
+
         <div id="gridCont">
             <div class="grid-stack"></div>
         </div>
-    </div>
     <script type="text/javascript">
         // NOTE: REAL apps would sanitize-html or DOMPurify before blinding setting innerHTML. see #2736
         GridStack.renderCB = function (el, w) {
@@ -42,13 +58,11 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
 
         function addWidget() {
             let n = {
-                x: 0,
-                y: 0,
                 w: Math.round(1 + 3 * Math.random()),
                 h: Math.round(1 + 3 * Math.random()),
                 content: '<button onClick="grid.removeWidget(this.parentNode.parentNode)">X</button><br>',
             };
-            grid.addWidget(n);
+            <!--grid.addWidget(n);-->
         };
 
         function addEvents(grid) {
@@ -103,15 +117,15 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
             textarea.style.fontSize = newFontSize + 'px';
         }
 
-        document.querySelector('.add-widget-form').addEventListener('submit', function (event) {
-            setTimeout(() => {
-                htmx.ajax('GET', '/detail/{{board.id}}/', {
-                    target: '#board-list',
-                    swap: 'innerHTML',
-                });
-            }, 100);
+       // document.querySelector('.add-widget-form').addEventListener('submit', function (event) {
+       //     setTimeout(() => {
+       //         htmx.ajax('GET', '/detail/{{board.id}}/', {
+       //             target: '#board-list',
+       //             swap: 'innerHTML',
+       //         });
+       //     }, 100);
 
-        });
+       // });
 
 document.addEventListener("htmx:wsAfterMessage", function (event) {
   const raw = event.detail.message;
@@ -154,6 +168,9 @@ document.addEventListener("htmx:wsAfterMessage", function (event) {
       } else {
         console.warn(`Widget with gs-id="${data.id}" not found`);
       }
+    } else if (data.type == "deleted"){
+        const el = document.querySelector(`[gs-id="${data.id}"]`);
+        grid.removeWidget(el);
     } else {
       console.warn("Unknown message type:", data.type);
     }

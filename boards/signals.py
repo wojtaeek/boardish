@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -38,3 +38,14 @@ def update_widget(sender, instance, created, **kwargs):
             "content": instance.content,
         }
         async_to_sync(channel_layer.group_send)(group_name, event)
+
+
+@receiver(post_delete, sender=Element)
+def delete_widget(sender, instance, **kwargs):
+    channel_layer = get_channel_layer()
+    group_name = f"board-update-{instance.board.id}"
+    event = {
+        "type": "instance_deleted",
+        "id": instance.order,
+    }
+    async_to_sync(channel_layer.group_send)(group_name, event)

@@ -353,6 +353,8 @@ def add_widget(request, pk):
         content=escape(content),
         type=widget_type,
     )
+    return HttpResponse(status=200)
+    """
     serialized_element = {
         "id": element.order,
         "x": element.x,
@@ -362,6 +364,7 @@ def add_widget(request, pk):
         "content": element.content,
     }
     return JsonResponse(serialized_element)
+    """
 
 
 @csrf_exempt
