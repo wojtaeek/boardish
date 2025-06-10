@@ -1,35 +1,41 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="{% url 'index' %}">Boardish
-    </a>
-
-    <div id="navbarNav">
-        <ul class="navbar-nav ml-auto">
-            {% if user.is_authenticated %}
+<nav class="navbar navbar-expand navbar-dark bg-dark">
+  <div class="container-fluid">
+    <div class="row w-100 align-items-center">
+      <!-- Brand and My Boards -->
+      <div class="col-4">
+        <a class="navbar-brand" href="{% url 'index' %}">boardish</a>
+        {% if user.is_authenticated %}
+          <a class="nav-link d-inline-block ms-3 text-white" href="{% url 'board-list' %}">my boards</a>
+        {% endif %}
+      </div>
+      <!-- Navigation Links -->
+      <div class="col-6 offset-2">
+        <ul class="navbar-nav d-flex flex-row justify-content-end">
+          {% if user.is_authenticated %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'board-list' %}">my boards</a>
+              <a href="#" class="nav-link" id="logout-link">logout</a>
+            </li>
+          {% else %}
+            <li class="nav-item me-3">
+              <a class="nav-link" href="{% url 'login' %}">login</a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" id="logout-link">logout</a>
-            </li> <!-- changed in django 5.0 logout requests must be a post not a get-->
-            {% else %}
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">login</a>
+              <a class="nav-link" href="{% url 'register' %}">register</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{% url 'register' %}">register</a>
-            </li>
-            {% endif %}
-
+          {% endif %}
         </ul>
+      </div>
     </div>
-    <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
-        {% csrf_token %}
-    </form>
-
-    <script>
-        document.getElementById('logout-link').addEventListener('click', function (e) {
-            e.preventDefault();
-            document.getElementById('logout-form').submit();
-        });
-    </script>
+  </div>
+  <!-- Logout Form -->
+  <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+    {% csrf_token %}
+  </form>
 </nav>
+
+<script>
+  document.getElementById('logout-link').addEventListener('click', function (e) {
+    e.preventDefault();
+    document.getElementById('logout-form').submit();
+  });
+</script>

@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from django.urls import reverse_lazy
+
+# from django.urls import reverse_lazy
 import os
 
 DB_HOST = os.environ.get("DB_HOST", "localhost")
@@ -34,6 +35,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,6 +47,8 @@ INSTALLED_APPS = [
     "django_extensions",
     "debug_toolbar",
     "django_htmx",
+    "channels",
+    "boards.apps",
 ]
 
 MIDDLEWARE = [
@@ -146,6 +150,18 @@ LOGOUT_REDIRECT_URL = "index"
 PAGINATE_BY = 25
 # temporary??
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+
+ASGI_APPLICATION = "boardish.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
 """
 LOGGING = {
     "version": 1,

@@ -1,4 +1,4 @@
-<div class="col-0 align-left">
+<div class="col-0 align-left" hx-ext="ws" ws-connect="/ws/board-update/{{ board.id }}">
     <a id="backtoboard" hx-get="{% url 'board-list-partial' %}" hx-target="#board-list" hx-push-url="/boards"
         hx-swap="innerHTML">back to
         boards</a>
@@ -70,8 +70,8 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
                                 h: item.h,
                                 pk: {{board.id}},
                             }
-            });
-        });
+                        });
+                    });
                 } 
                 else if (event.type === 'removed') {
             items.forEach(function (item) {
@@ -113,6 +113,53 @@ style="position: absolute; top: 0; right: 0; background-color: red; color: white
 
         });
 
+document.addEventListener("htmx:wsAfterMessage", function (event) {
+  const raw = event.detail.message;
 
-    </script>
+  try {
+    const data = JSON.parse(raw);
+    console.log("Received WebSocket message:", data);
+
+    if (!data.type || !data.id) {
+      console.error("Invalid message structure:", data);
+      return;
+    }
+
+    if (data.type === "created") {
+      console.log("Creating widget:", data);
+      grid.addWidget({
+        x: parseInt(data.x, 10),
+        y: parseInt(data.y, 10),
+        w: parseInt(data.w, 10),
+        h: parseInt(data.h, 10),
+        content: data.content || "",
+        id: `${data.id}`
+      });
+    } else if (data.type === "updated") {
+      console.log("Updating widget:", data);
+      const el = document.querySelector(`[gs-id="${data.id}"]`);
+      if (el) {
+        const contentEl = el.querySelector(".grid-stack-item-content");
+        if (contentEl) {
+          contentEl.innerHTML = data.content || "";
+        } else {
+          console.warn(`Content element not found for widget-${data.id}`);
+        }
+        grid.update(el, {
+          x: parseInt(data.x, 10),
+          y: parseInt(data.y, 10),
+          w: parseInt(data.w, 10),
+          h: parseInt(data.h, 10)
+        });
+      } else {
+        console.warn(`Widget with gs-id="${data.id}" not found`);
+      }
+    } else {
+      console.warn("Unknown message type:", data.type);
+    }
+  } catch (e) {
+    console.error("Failed to parse WebSocket message:", raw, e);
+  }
+});
+</script>
 </div>

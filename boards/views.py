@@ -192,7 +192,7 @@ def sort(request):
 @login_required
 def detail(request, pk):
     userboard = get_object_or_404(UserBoard, pk=pk)
-    context = {"userboard": userboard}
+    context = {"userboard": userboard, "board.pk": pk}
     return render(request, "partials/board-detail.html", context)
 
 
@@ -254,7 +254,7 @@ def board_view(request, pk):
         <button id="decrease-font" type="button" onclick="adjustFontSize(this, 'decrease')">Decrease Font</button>
     </div>
 
-    <form hx-post="{reverse('update-textarea-content')}" hx-trigger="keyup changed delay:500ms" hx-include="[name=content]" hx-target="this">
+    <form hx-post="{reverse("update-textarea-content")}" hx-trigger="keyup changed delay:500ms" hx-include="[name=content]" hx-target="this">
         <input type="hidden" name="note_id" value="{element.id}">
         <input type="hidden" name="board_id" value="{board.id}">
         <textarea name="content" style="width: 100%; height: 100%; box-sizing: border-box; margin: 0; padding: 0; font-size: 16px;">{element.content}</textarea>
@@ -270,7 +270,7 @@ def board_view(request, pk):
 
     <img src="{element.content}" class="image" />
 
-    <form id="form" hx-post="{reverse('upload-image')}" hx-trigger="submit" hx-target="this" hx-swap="outerHTML">
+    <form id="form" hx-post="{reverse("upload-image")}" hx-trigger="submit" hx-target="this" hx-swap="outerHTML">
         <input type="hidden" name="widget_id" value="{element.id}">
         <input type="hidden" name="board_id" value="{board.id}">
         <input type="hidden" name="content" id="content">
