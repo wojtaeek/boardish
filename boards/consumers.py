@@ -30,6 +30,7 @@ class BoardUpdateConsumer(WebsocketConsumer):
                     "w": event["w"],
                     "h": event["h"],
                     "content": event["content"],
+                    "kind": event["kind"],
                 }
             )
         )
@@ -46,6 +47,7 @@ class BoardUpdateConsumer(WebsocketConsumer):
                     "w": event["w"],
                     "h": event["h"],
                     "content": event["content"],
+                    "kind": event["kind"],
                 }
             )
         )

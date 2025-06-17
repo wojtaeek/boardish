@@ -21,6 +21,7 @@ def update_widget(sender, instance, created, **kwargs):
             "w": instance.w,
             "h": instance.h,
             "content": instance.content,
+            "kind": instance.type,
         }
         async_to_sync(channel_layer.group_send)(group_name, event)
     if not created:
@@ -36,6 +37,7 @@ def update_widget(sender, instance, created, **kwargs):
             "w": instance.w,
             "h": instance.h,
             "content": instance.content,
+            "kind": instance.type,
         }
         async_to_sync(channel_layer.group_send)(group_name, event)
 

@@ -148,7 +148,6 @@ LOGIN_REDIRECT_URL = "index"
 LOGOUT_REDIRECT_URL = "index"
 
 PAGINATE_BY = 25
-# temporary??
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 
 ASGI_APPLICATION = "boardish.asgi.application"
@@ -157,7 +156,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [os.environ.get("REDIS_URL", "redis://localhost:6379/0")],
         },
     },
 }

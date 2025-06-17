@@ -1,73 +1,85 @@
-﻿# Project Name: Dish
+﻿# Boardish
 
-Dynamic modular corkboard with the ability to add, update, delete widgets. Uses: django, htmx, gridstack.js and some more.
+Dynamic modular board with the ability to add, update, delete widgets.
+Uses: django, htmx, gridstack.js and some more.
 
 ## Features
 
 - User authentication and registration
 - Create, edit, and delete boards
 - Add and manage elements on boards
-- Responsive design
-- Image upload and scaling
+- Work in real time with other users
+
+## Planned changes
+
+- Upgraded image storing
+- Break down board elements into segmental customizable pieces
 
 ## Project Structure
 
-```
-/home/wojtek/dish/
-├── Dockerfile
-├── README.md
+```.
+├── boardish
+│   ├── asgi.py
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── boards
+│   ├── admin.py
+│   ├── apps.py
+│   ├── consumers.py
+│   ├── forms.py
+│   ├── __init__.py
+│   ├── migrations
+│   │   ├── 0001_initial.py
+│   │   ├── 0002_board_element_userboard_board_user_boardelement.py
+│   │   ├── 0003_element_board_element_order_delete_boardelement.py
+│   │   ├── 0004_alter_board_title.py
+│   │   ├── 0005_alter_element_type.py
+│   │   ├── __init__.py
+│   ├── models.py
+│   ├── routing.py
+│   ├── signals.py
+│   ├── templates
+│   │   ├── base.html
+│   │   ├── board.html
+│   │   ├── boards.html
+│   │   ├── index.html
+│   │   ├── partials
+│   │   │   ├── board-detail.html
+│   │   │   ├── board-list-elements.html
+│   │   │   ├── board-list.html
+│   │   │   ├── navbar.html
+│   │   │   ├── search.html
+│   │   │   └── search-results.html
+│   │   └── registration
+│   │       ├── login.html
+│   │       └── register.html
+│   ├── tests.py
+│   ├── urls.py
+│   ├── utils.py
+│   └── views.py
 ├── docker-compose.yml
+├── Dockerfile
 ├── manage.py
+├── README.md
+├── requirements2.txt
 ├── requirements.txt
-├── boardish/
-│   ├── __init__.py
-│   ├── asgi.py
-│   ├── settings.py
-│   ├── urls.py
-│   ├── wsgi.py
-├── boards/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── forms.py
-│   ├── models.py
-│   ├── tests.py
-│   ├── urls.py
-│   ├── utils.py
-│   ├── views.py
-│   └── migrations/
-│       ├── 0001_initial.py
-│       ├── 0002_board_element_userboard_board_user_boardelement.py
-│       ├── 0003_element_board_element_order_delete_boardelement.py
-│       ├── 0004_alter_board_title.py
-│       ├── 0005_alter_element_type.py
-│       └── __init__.py
-├── static/
-│   ├── bready.css
-│   ├── demo.css
-│   ├── events.js
-│   ├── gridstack-all.js
-│   ├── gridstack.scss
-│   ├── navbar.css
-│   ├── css/
-│   │   └── styles.css
-│   └── js/
-│       └── image.js
-├── templates/
-│   ├── base.html
-│   ├── board.html
-│   ├── boards.html
-│   ├── index.html
-│   └── partials/
-│       ├── board-detail.html
-│       ├── board-list-elements.html
-│       ├── board-list.html
-│       ├── navbar.html
-│       ├── search-results.html
-│       ├── search.html
-│       └── registration/
-│           ├── login.html
-│           └── register.html
+└── static
+    ├── board_images
+    ├── bready.css
+    ├── css
+    │   └── styles.css
+    ├── demo.css
+    ├── events.js
+    ├── gridstack-all.js
+    ├── gridstack.scss
+    ├── js
+    │   └── image.js
+    ├── khot.png
+    └── navbar.css
+
+14 directories, 72 files
 ```
 
 ## Docker Setup
@@ -77,6 +89,7 @@ To run the project using Docker:
 **Run the Docker container using Docker Compose:**
 
    ```sh
+   cd /path/to/repo
    docker-compose up
    ```
 
@@ -90,35 +103,44 @@ To run the project using Docker:
 
 - Docker
 - Docker Compose
+- Database (Postgresql)
 
 ## Local installation (for editing)
 
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/wojtaeek/dish.git
+   git clone https://github.com/wojtaeek/boardish.git
    cd dish
    ```
 
 2. Install the required dependencies:
 
    ```sh
-   pip install -r requirements.txt (possibly you will need to install psycopg2 separately with another tool (pacman, apt, winget etc.))
+   pip install -r requirements.txt
    ```
 
 3. Set up the database:
 
-   Create the database (assuming you have postgres) with the credentials available in the /boardish/settings.py. (Alternatively switch to sqlite db, although that may cause issues with the existing migrations as it does not support JSON data format) 
+   Create the database (assuming you have postgres) with the credentials
+   available in the /boardish/settings.py.
+   (Alternatively switch to sqlite db, although that may cause
+   issues with the existing migrations as it does not support JSON data format)
 
-4. Apply the migrations:
+4. Run redis in docker:
+
+   ```sh
+   docker run -d redis
+   ```
+
+5. Apply the migrations:
 
    ```sh
    python manage.py migrate
    ```
 
-5. Run the development server:
+6. Run the development server:
 
    ```sh
    python manage.py runserver
    ```
-

@@ -139,41 +139,111 @@ document.addEventListener("htmx:wsAfterMessage", function (event) {
       return;
     }
 
-    if (data.type === "created") {
-      console.log("Creating widget:", data);
-      grid.addWidget({
-        x: parseInt(data.x, 10),
-        y: parseInt(data.y, 10),
-        w: parseInt(data.w, 10),
-        h: parseInt(data.h, 10),
-        content: data.content || "",
-        id: `${data.id}`
-      });
-    } else if (data.type === "updated") {
-      console.log("Updating widget:", data);
-      const el = document.querySelector(`[gs-id="${data.id}"]`);
-      if (el) {
-        const contentEl = el.querySelector(".grid-stack-item-content");
-        if (contentEl) {
-          contentEl.innerHTML = data.content || "";
-        } else {
-          console.warn(`Content element not found for widget-${data.id}`);
-        }
-        grid.update(el, {
+    const widgetId = `${data.id}`;
+    const selector = `[gs-id="${widgetId}"]`;
+
+    // Wrap raw content according to its 'kind'
+    function wrapContent(kind, content, id, boardId) {
+      switch (kind) {
+        case "text":
+          return `
+<button onClick="grid.removeWidget(this.parentNode.parentNode)" style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer;">x</button><br>
+            <div class="textarea-container">
+              <div id="font-buttons" style="margin-bottom: 10px;">
+                <button type="button" onclick="adjustFontSize(this, 'increase')">Increase Font</button>
+                <button type="button" onclick="adjustFontSize(this, 'decrease')">Decrease Font</button>
+              </div>
+              <form 
+                hx-post="/update-textarea-content/" 
+                hx-trigger="keyup changed delay:500ms" 
+                hx-include="[name=content]" 
+                hx-target="this">
+                <input type="hidden" name="note_id" value="${id}">
+                <input type="hidden" name="board_id" value="${boardId}">
+                <textarea name="content" style="width: 100%; height: 100%; box-sizing: border-box; font-size: 16px;">${content}</textarea>
+              </form>
+            </div>
+          `;
+
+        case "image":
+          return `
+<button onClick="grid.removeWidget(this.parentNode.parentNode)" style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer;">x</button><br>
+            <div class="image-container">
+              <div id="image-buttons" style="margin-bottom: 10px;">
+                <button type="button" onclick="scaleImage(this, 'original')">Original Resolution</button>
+                <button type="button" onclick="scaleImage(this, 'scaled')">Fit to Container</button>
+              </div>
+              <img src="${content}" class="image" />
+              <form 
+                hx-post="/upload-image/" 
+                hx-trigger="submit" 
+                hx-target="this" 
+                hx-swap="outerHTML">
+                <input type="hidden" name="widget_id" value="${id}">
+                <input type="hidden" name="board_id" value="${boardId}">
+                <input type="hidden" name="content" id="content">
+                <input type="file" name="file" accept="image/*">
+                <button type="submit">Upload</button>
+                <progress id="progress" value="0" max="100"></progress>
+              </form>
+            </div>
+          `;
+
+        default:
+          return content;
+      }
+    }
+
+    const wrappedContent = wrapContent(data.kind, data.content || "", data.id, data.board_id || "");
+
+    switch (data.type) {
+      case "created":
+        console.log("Creating widget:", data);
+        grid.addWidget({
           x: parseInt(data.x, 10),
           y: parseInt(data.y, 10),
           w: parseInt(data.w, 10),
-          h: parseInt(data.h, 10)
+          h: parseInt(data.h, 10),
+          content: wrappedContent,
+          id: widgetId
         });
-      } else {
-        console.warn(`Widget with gs-id="${data.id}" not found`);
-      }
-    } else if (data.type == "deleted"){
-        const el = document.querySelector(`[gs-id="${data.id}"]`);
-        grid.removeWidget(el);
-    } else {
-      console.warn("Unknown message type:", data.type);
+        break;
+
+      case "updated":
+        console.log("Updating widget:", data);
+        const el = document.querySelector(selector);
+        if (el) {
+          const contentEl = el.querySelector(".grid-stack-item-content");
+          if (contentEl) {
+            contentEl.innerHTML = wrappedContent;
+          } else {
+            console.warn(`.grid-stack-item-content not found in widget-${data.id}`);
+          }
+          grid.update(el, {
+            x: parseInt(data.x, 10),
+            y: parseInt(data.y, 10),
+            w: parseInt(data.w, 10),
+            h: parseInt(data.h, 10)
+          });
+        } else {
+          console.warn(`Widget with gs-id="${widgetId}" not found`);
+        }
+        break;
+
+      case "deleted":
+        console.log("Deleting widget:", data);
+        const elToRemove = document.querySelector(selector);
+        if (elToRemove) {
+          grid.removeWidget(elToRemove);
+        } else {
+          console.warn(`Widget to delete not found: ${selector}`);
+        }
+        break;
+
+      default:
+        console.warn("Unknown message type:", data.type);
     }
+
   } catch (e) {
     console.error("Failed to parse WebSocket message:", raw, e);
   }

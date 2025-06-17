@@ -44,6 +44,7 @@ class Element(models.Model):
 
     data = models.JSONField(null=True, blank=True)
     content = models.TextField(null=True, blank=True)  # tu wszystko upchać
+    # image = models.ImageField(upload_to="board_images")
 
     def __str__(self):
         return f"Element {self.id} ({self.type}) at ({self.x}, {self.y})"
