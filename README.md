@@ -130,7 +130,7 @@ To run the project using Docker:
 4. Run redis in docker:
 
    ```sh
-   docker run -d redis
+   docker run -d -p 6379:6379 --name redis redis
    ```
 
 5. Apply the migrations:
